@@ -1,7 +1,7 @@
 #EventFields.csv and StateRuns.csv files must be in the csv_dir and the event files must be in the event_file_dir
 
 Exp_Runs_Inning <- function(year, team = 'ALL', event_file_dir, csv_dir){
-    
+    require(MASS)
     file_list = list.files(event_file_dir)
     header = read.csv(paste(csv_dir,'EventFields.csv', sep='/'))[,3]
     file = paste('all', year,'.csv', sep='')
@@ -12,11 +12,20 @@ Exp_Runs_Inning <- function(year, team = 'ALL', event_file_dir, csv_dir){
     
     #Generates the states and number of runners for all events
     generate_states <- function(EventData){
-        first=ifelse(EventData$BASE1_RUN_ID=='',0,1)
-        second=ifelse(EventData$BASE2_RUN_ID=='',0,1)
-        third=ifelse(EventData$BASE3_RUN_ID=='',0,1)
-        state_vec = paste(EventData$OUTS_CT, ' ', first,second,third, sep='')
-        return(cbind(state_vec, first+second+third))
+        start = with(EventData, 
+                     paste(OUTS_CT,' ', 
+                           ifelse(BASE1_RUN_ID=='',0,1),
+                           ifelse(BASE2_RUN_ID=='',0,1),
+                           ifelse(BASE3_RUN_ID=='',0,1), sep=''))
+        end = with(EventData, 
+                   paste(OUTS_CT+EVENT_OUTS_CT,' ', 
+                         as.numeric(RUN1_DEST_ID==1 | BAT_DEST_ID==1),
+                         as.numeric(RUN1_DEST_ID==2 | RUN2_DEST_ID==2 | BAT_DEST_ID==2),
+                         as.numeric(RUN1_DEST_ID==3 | RUN2_DEST_ID==3 |RUN3_DEST_ID==3 | BAT_DEST_ID==3), sep=''))
+        
+        runner_change = (as.numeric(substr(start,3,3))+as.numeric(substr(start,4,4))+as.numeric(substr(start,5,5))) - (as.numeric(substr(end,3,3))+as.numeric(substr(end,4,4))+as.numeric(substr(end,5,5))) 
+        end = ifelse(substr(end,1,1)=='3', '3 000', end)
+        return(cbind(start,end,runner_change))
     }
     #Creates a 25 by 25 matrix of 0's
     empty_transition_matrix <- function(states){
@@ -31,12 +40,13 @@ Exp_Runs_Inning <- function(year, team = 'ALL', event_file_dir, csv_dir){
                               (EventData$AWAY_TEAM_ID==team &EventData$BAT_HOME_ID==0),]
         
     }
-    if(file %in% filelist){
+    if(file %in% file_list){
         events = read.csv(file, header=FALSE)
         names(events) = header
         generated_states = generate_states(events)
-        events$STATES = generated_states[,1]
-        events$RUNNERS = as.numeric(generated_states[,2])
+        events$START = generated_states[,1]
+        events$END = generated_states[,2]
+        events$RUNNER_CHANGE = as.numeric(generated_states[,3])
         events$HOME = substr(events$GAME_ID,1,3)
         events = subset(events, FOUL_FL==FALSE)
         
@@ -50,28 +60,17 @@ Exp_Runs_Inning <- function(year, team = 'ALL', event_file_dir, csv_dir){
         transitions_nonAB = empty_transition_matrix(states)
 
         for(i in 1:(dim(events)[1]-1)){
-            HALF_CHANGE = ifelse((events[i+1,'BAT_HOME_ID'] != events[i,'BAT_HOME_ID'])|
-                                    (events[i+1,'INN_CT'] != events[i,'INN_CT']) ,TRUE,FALSE)
-            RUNNER_CHANGE = events[i+1,'RUNNERS'] - events[i,'RUNNERS']
             if(events[i,'GAME_END_FL']==TRUE){
                 #Game ends so there is no transition
             }
             #If the batter doesn't advance and there is no scoring, then we don't want this transition to 
             #have the normal number of runs expected to score
             #EXAMPLE: Stolen base --> 0 100 to 0 010 would usually be construed as a double, but I don't count it this way
-            else if(events[i,'BAT_EVENT_FL']==FALSE & RUNNER_CHANGE == 0){
-                if(HALF_CHANGE){
-                    transitions_nonAB[events$STATES[i],"3 000"] = transitions_nonAB[events$STATES[i],"3 000"] + 1
-                }else{
-                    transitions_nonAB[events$STATES[i],events$STATES[i+1]] = transitions_nonAB[events$STATES[i],events$STATES[i+1]] +1
-                } 
+            else if(events$BAT_EVENT_FL[i]==FALSE & events$RUNNER_CHANGE[i] == 0){
+                transitions_nonAB[events$START[i],events$END[i]] = transitions_nonAB[events$START[i],events$END[i]] +1 
             #If the batter advances, then we add a transition to the normal matrix
             }else{
-                if(HALF_CHANGE){
-                    transitions[events$STATES[i],"3 000"] = transitions[events$STATES[i],"3 000"] + 1
-                }else{
-                    transitions[events$STATES[i],events$STATES[i+1]] = transitions[events$STATES[i],events$STATES[i+1]] +1
-                }
+                transitions[events$START[i],events$END[i]] = transitions[events$START[i],events$END[i]] +1
             }
         }
         temp_transitions = transitions+transitions_nonAB
