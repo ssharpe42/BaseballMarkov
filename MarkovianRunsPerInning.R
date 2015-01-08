@@ -6,9 +6,9 @@ Exp_Runs_Inning <- function(year, team = 'ALL', event_file_dir, csv_dir){
     header = read.csv(paste(csv_dir,'EventFields.csv', sep='/'))[,3]
     file = paste('all', year,'.csv', sep='')
     
-    states = c('0 000','0 001', '0 010', '0 100', '0 011', '0 101', '0 110', '0 111',
-               '1 000','1 001', '1 010', '1 100', '1 011', '1 101', '1 110', '1 111',
-               '2 000','2 001', '2 010', '2 100', '2 011', '2 101', '2 110', '2 111', '3 000')
+    states = c('0 000','0 100', '0 010', '0 001', '0 110', '0 101', '0 011', '0 111',
+               '1 000','1 100', '1 010', '1 001', '1 110', '1 101', '1 011', '1 111',
+               '2 000','2 100', '2 010', '2 001', '2 110', '2 101', '2 011', '2 111', '3 000')
     
     #Generates the states and number of runners for all events
     generate_states <- function(EventData){
