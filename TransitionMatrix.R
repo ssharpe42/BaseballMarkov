@@ -11,11 +11,18 @@ state_transition_matrix <- function(year, team='ALL', event_file_dir, csv_dir){
     
     #Generates the states and number of runners for all events
     generate_states <- function(EventData){
-        state_vec = paste(EventData$OUTS_CT, ' ', 
-                          ifelse(EventData$BASE1_RUN_ID=='',0,1),
-                          ifelse(EventData$BASE2_RUN_ID=='',0,1),
-                          ifelse(EventData$BASE3_RUN_ID=='',0,1), sep='')
-        return(state_vec)
+        start = with(EventData, 
+                   paste(OUTS_CT,' ', 
+                         ifelse(BASE1_RUN_ID=='',0,1),
+                         ifelse(BASE2_RUN_ID=='',0,1),
+                         ifelse(BASE3_RUN_ID=='',0,1), sep=''))
+        end = with(EventData, 
+                    paste(OUTS_CT+EVENT_OUTS_CT,' ', 
+                    as.numeric(RUN1_DEST_ID==1 | BAT_DEST_ID==1),
+                    as.numeric(RUN1_DEST_ID==2 | RUN2_DEST_ID==2 | BAT_DEST_ID==2),
+                    as.numeric(RUN1_DEST_ID==3 | RUN2_DEST_ID==3 |RUN3_DEST_ID==3 | BAT_DEST_ID==3), sep=''))
+        end = ifelse(substr(end,1,1)=='3', '3 000', end)
+        return(cbind(start,end))
     }
     #subsets the event data for a certain team
     team_subset<-function(EventData, team){
@@ -24,11 +31,13 @@ state_transition_matrix <- function(year, team='ALL', event_file_dir, csv_dir){
         
     }
     
-    if(file %in% filelist){
+    if(file %in% file_list){
         events = read.csv(file, header=FALSE)
         names(events) = header
         events$HOME = substr(events$GAME_ID,1,3)
-        events$STATES = generate_states(events)
+        gen_states = generate_states(events)
+        events$START = gen_states[,1]
+        events$END = gen_states[,2] 
         events = subset(events, FOUL_FL==FALSE)
         if(team!='ALL' & !team %in% events$HOME){
             print('The team you have selected does not exist or has a different abbreviation.')
@@ -43,12 +52,7 @@ state_transition_matrix <- function(year, team='ALL', event_file_dir, csv_dir){
             if(events[i,'GAME_END_FL']==TRUE){
                 #Game ends so there is no transition
             }
-            else if((events[i+1,'BAT_HOME_ID'] != events[i,'BAT_HOME_ID'])|
-                        (events[i+1,'INN_CT'] != events[i,'INN_CT'])){
-                transition_matrix[events$STATES[i],"3 000"] = transition_matrix[events$STATES[i],"3 000"] + 1
-            }else{
-                transition_matrix[events$STATES[i],events$STATES[i+1]] = transition_matrix[events$STATES[i],events$STATES[i+1]] +1
-            }
+            transition_matrix[events$START[i],events$END[i]] = transition_matrix[events$START[i],events$END[i]]+1
         }
         
         transition_matrix = round(transition_matrix/rowSums(transition_matrix),4)
