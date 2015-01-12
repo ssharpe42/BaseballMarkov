@@ -3,8 +3,8 @@ source('Lineup.R')
 source('GameSimulation.R')
 
 
-event= "/Users/Sam/Desktop/Projects/Baseball Data/downloadfolder/unzipped"
-csv = "/Users/Sam/Desktop/Projects/Baseball Data"
+event= "..."
+csv = ".../data"
 
 LAA_2014=create_lineup(player_names=c('Kole Calhoun','Mike Trout', 'Albert Pujols','Josh Hamilton',
                                     'Howie Kendrick','Erick Aybar','David Freese', 'Chris Iannetta', 'Collin Cowgill'), 
