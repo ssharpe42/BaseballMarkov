@@ -5,13 +5,10 @@ Downloading Retrosheet Event Files
 ===========================
 Refer to this repository: https://gist.github.com/bayesball/8892981
 
-EventFields.csv
-================
-Names of event file columns and their descriptions
-
-StateRuns.csv
-================
-Runs scored for each of the 576 transient transitions (transitions that dont start or end in 3 outs).
+data
+===============
+EventFields.csv --> Names of event file columns and their descriptions
+StateRuns.csv --> Runs scored for each of the 576 transient transitions (transitions that dont start or end in 3 outs).
 
 TransitionMatrix.R
 =====================
