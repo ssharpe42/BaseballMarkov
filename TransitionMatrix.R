@@ -1,4 +1,3 @@
-source('PlayertoRetroid.R')
 
 #generates start and end states for an event file data frame
 generate_states <- function(EventData){
