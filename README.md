@@ -9,10 +9,6 @@ TransitionMatrix.R
 =====================
 Produces a state transition matrix for a specific season for the MLB or a specific team.
 
-MarkovianRunsPerInning.R
-=======================
-Estimates the runs per inning of a team based on the unique properties of Markov transition matricies.
-
 EventFields.csv
 ================
 Names of event file columns and their descriptions
